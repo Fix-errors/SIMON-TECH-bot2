@@ -3,6 +3,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const chalk = require('chalk');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,12 +15,81 @@ let qrCodeData = null;
 let sessionGenerated = false;
 let sessionId = null;
 let pairingCode = null;
-let sockets = {}; // Store socket instances
+let phoneNumberData = null;
+let countryCode = null;
+let sockets = {};
 
 // Ensure sessions directory exists
 const sessionsDir = path.join(__dirname, 'sessions');
 if (!fs.existsSync(sessionsDir)) {
   fs.mkdirSync(sessionsDir, { recursive: true });
+}
+
+// Country code mapping
+const countryMap = {
+  '234': '🇳🇬 Nigeria',
+  '1': '🇺🇸 United States',
+  '44': '🇬🇧 United Kingdom',
+  '91': '🇮🇳 India',
+  '86': '🇨🇳 China',
+  '81': '🇯🇵 Japan',
+  '55': '🇧🇷 Brazil',
+  '33': '🇫🇷 France',
+  '39': '🇮🇹 Italy',
+  '49': '🇩🇪 Germany',
+};
+
+function getCountry(phone) {
+  for (const [code, country] of Object.entries(countryMap)) {
+    if (phone.startsWith('+' + code)) {
+      return country;
+    }
+  }
+  return '🌍 Unknown';
+}
+
+function formatPhoneDisplay(phone) {
+  // Extract last 8 digits
+  const lastDigits = phone.replace(/\D/g, '').slice(-8);
+  return '****' + lastDigits;
+}
+
+function printSessionInfo(phone, code) {
+  const country = getCountry(phone);
+  const displayPhone = formatPhoneDisplay(phone);
+  
+  console.log('\n');
+  console.log('╭━━━━━━━━━━━━━━━╮');
+  console.log('♡ 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 👀');
+  console.log('╰━━━━━━━━━━━━━━━╯');
+  console.log('');
+  console.log(`╰┈➤ ɴᴜᴍʙᴇʀ : ${phone}`);
+  console.log(`╰┈➤ ᴄᴏᴜɴᴛʀʏ : ${country}`);
+  console.log('╰┈➤ ʙʀᴀɴᴅ : SIMO-TECH');
+  console.log(`╰┈➤ ᴘᴀɪʀ ᴄᴏᴅᴇ : ${code}`);
+  console.log('');
+  console.log('[ ❤️‍🩹 𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐎𝐍𝐍𝐄𝐂𝐓𝐈𝐍𝐆 ❤️‍🩹 ]');
+  console.log('\n');
+}
+
+function printSessionSuccess(phone, code) {
+  const country = getCountry(phone);
+  
+  console.log('\n');
+  console.log('╭━━━━━━━━━━━━━━━╮');
+  console.log('💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖');
+  console.log('╰━━━━━━━━━━━━━━━╯');
+  console.log('');
+  console.log('✅ 𝐏𝐚𝐢𝐫 𝐂𝐨𝐝𝐞 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞𝐝');
+  console.log('');
+  console.log(`📱 𝐍𝐮𝐦𝐛𝐞𝐫: ${phone}`);
+  console.log(`${country}`);
+  console.log('');
+  console.log(`🔑 𝐂𝐨𝐝𝐞: ${code}`);
+  console.log('');
+  console.log('📲 𝐄𝐧𝐭𝐞𝐫 𝐭𝐡𝐢𝐬 𝐜𝐨𝐝𝐞 𝐢𝐧 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩');
+  console.log('❤️‍🩹 𝐒𝐞𝐬𝐬𝐢𝐨𝐧 𝐂𝐨𝐧𝐧𝐞𝐜𝐭𝐢𝐧𝐠...');
+  console.log('\n');
 }
 
 // Session Generator with QR Code method
@@ -50,7 +120,7 @@ async function generateSessionQR() {
 
         // Generate SESSION_ID string
         try {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for creds to save
+          await new Promise(resolve => setTimeout(resolve, 1000));
           const credentialsPath = path.join(sessionPath, 'creds.json');
           if (fs.existsSync(credentialsPath)) {
             const credentials = fs.readFileSync(credentialsPath, 'utf-8');
@@ -84,6 +154,7 @@ async function generateSessionQR() {
 // Session Generator with Phone Number Pairing
 async function generateSessionPhone(phoneNumber) {
   try {
+    phoneNumberData = phoneNumber;
     const sessionPath = path.join(sessionsDir, 'SIMON_PHONE');
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
@@ -92,7 +163,7 @@ async function generateSessionPhone(phoneNumber) {
       printQRInTerminal: false,
     });
 
-    sockets['phone'] = sock; // Store the socket
+    sockets['phone'] = sock;
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect } = update;
@@ -103,9 +174,8 @@ async function generateSessionPhone(phoneNumber) {
         console.log('✅ Session generated successfully via Phone!');
         console.log(`📱 Session ID: ${sessionId}`);
 
-        // Generate SESSION_ID string
         try {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for creds to save
+          await new Promise(resolve => setTimeout(resolve, 1000));
           const credentialsPath = path.join(sessionPath, 'creds.json');
           if (fs.existsSync(credentialsPath)) {
             const credentials = fs.readFileSync(credentialsPath, 'utf-8');
@@ -129,7 +199,7 @@ async function generateSessionPhone(phoneNumber) {
       }
     });
 
-    // Wait for socket to be ready before requesting pairing code
+    // Wait for socket to be ready
     await new Promise(resolve => {
       const checkReady = setInterval(() => {
         if (sock.authState && sock.authState.creds) {
@@ -137,7 +207,7 @@ async function generateSessionPhone(phoneNumber) {
           resolve();
         }
       }, 100);
-      setTimeout(() => clearInterval(checkReady), 10000); // Timeout after 10s
+      setTimeout(() => clearInterval(checkReady), 10000);
     });
 
     // Request pairing code
@@ -145,6 +215,7 @@ async function generateSessionPhone(phoneNumber) {
       if (!sock.authState.creds.registered) {
         const code = await sock.requestPairingCode(phoneNumber);
         pairingCode = code;
+        printSessionInfo(phoneNumber, code);
         console.log(`\n📱 Pairing Code: ${code}\n`);
       }
     } catch (codeError) {
@@ -174,43 +245,52 @@ app.get('/', (req, res) => {
           box-sizing: border-box;
         }
         body {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          font-family: 'Courier New', monospace;
+          background: #0a0e27;
           min-height: 100vh;
           display: flex;
           justify-content: center;
           align-items: center;
           padding: 20px;
+          color: #fff;
         }
         .container {
-          background: white;
+          background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
           border-radius: 15px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          border: 2px solid #667eea;
+          box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
           max-width: 700px;
           width: 100%;
           padding: 40px;
           text-align: center;
         }
+        .header {
+          margin-bottom: 30px;
+          border: 2px dashed #667eea;
+          padding: 20px;
+          border-radius: 10px;
+        }
         h1 {
-          color: #333;
-          margin-bottom: 10px;
-          font-size: 28px;
+          font-size: 24px;
+          margin-bottom: 5px;
+          color: #ff69b4;
+          letter-spacing: 2px;
         }
         .subtitle {
-          color: #666;
-          margin-bottom: 30px;
+          color: #667eea;
           font-size: 14px;
+          margin-bottom: 10px;
         }
         .tabs {
           display: flex;
           gap: 10px;
           margin: 20px 0;
-          border-bottom: 2px solid #eee;
+          border-bottom: 2px solid #667eea;
         }
         .tab-btn {
           flex: 1;
           padding: 12px;
-          background: none;
+          background: transparent;
           border: none;
           cursor: pointer;
           font-size: 14px;
@@ -218,10 +298,11 @@ app.get('/', (req, res) => {
           color: #999;
           border-bottom: 3px solid transparent;
           transition: all 0.3s;
+          font-family: 'Courier New', monospace;
         }
         .tab-btn.active {
-          color: #667eea;
-          border-bottom-color: #667eea;
+          color: #ff69b4;
+          border-bottom-color: #ff69b4;
         }
         .tab-content {
           display: none;
@@ -232,9 +313,10 @@ app.get('/', (req, res) => {
         .qr-container {
           margin: 30px 0;
           padding: 20px;
-          background: #f8f9fa;
+          background: #0a0e27;
           border-radius: 10px;
           display: none;
+          border: 2px solid #667eea;
         }
         .qr-container.active {
           display: block;
@@ -243,21 +325,27 @@ app.get('/', (req, res) => {
           max-width: 300px;
           width: 100%;
           margin: 0 auto;
+          background: white;
+          padding: 10px;
+          border-radius: 8px;
         }
         .button {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
-          border: none;
+          border: 2px solid #667eea;
           padding: 12px 30px;
           border-radius: 5px;
           cursor: pointer;
-          font-size: 16px;
+          font-size: 14px;
           margin: 10px 5px;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: all 0.3s;
+          font-weight: bold;
+          font-family: 'Courier New', monospace;
         }
-        .button:hover {
+        .button:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 10px 20px rgba(102, 126, 234, 0.5);
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
         .button:disabled {
           opacity: 0.5;
@@ -272,24 +360,29 @@ app.get('/', (req, res) => {
           display: block;
           margin-bottom: 8px;
           font-weight: 600;
-          color: #333;
+          color: #667eea;
+          font-size: 12px;
         }
         .input-group input {
           width: 100%;
           padding: 10px;
-          border: 2px solid #ddd;
+          border: 2px solid #667eea;
           border-radius: 5px;
           font-size: 14px;
+          background: #0a0e27;
+          color: #fff;
+          font-family: 'Courier New', monospace;
           transition: border-color 0.3s;
         }
         .input-group input:focus {
           outline: none;
-          border-color: #667eea;
+          border-color: #ff69b4;
+          box-shadow: 0 0 10px rgba(255, 105, 180, 0.3);
         }
         .session-display {
           margin: 20px 0;
           padding: 15px;
-          background: #f0f4ff;
+          background: #0a0e27;
           border-radius: 8px;
           display: none;
           word-break: break-all;
@@ -297,90 +390,99 @@ app.get('/', (req, res) => {
           overflow-y: auto;
           text-align: left;
           border: 2px solid #667eea;
-          font-size: 12px;
-          font-family: monospace;
+          font-size: 11px;
+          font-family: 'Courier New', monospace;
+          color: #90ee90;
         }
         .session-display.active {
           display: block;
         }
         .copy-btn {
-          background: #28a745;
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          border-color: #28a745;
           margin-top: 10px;
         }
-        .copy-btn:hover {
-          box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        .copy-btn:hover:not(:disabled) {
+          box-shadow: 0 10px 20px rgba(40, 167, 69, 0.5);
+          background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
         }
         .status {
-          padding: 10px;
+          padding: 12px;
           border-radius: 5px;
           margin: 15px 0;
           display: none;
           font-weight: bold;
+          border: 2px solid;
+          font-size: 12px;
+          font-family: 'Courier New', monospace;
         }
         .status.active {
           display: block;
         }
         .status.success {
-          background: #d4edda;
-          color: #155724;
-          border: 1px solid #c3e6cb;
+          background: rgba(40, 167, 69, 0.2);
+          color: #90ee90;
+          border-color: #28a745;
         }
         .status.waiting {
-          background: #fff3cd;
-          color: #856404;
-          border: 1px solid #ffeaa7;
+          background: rgba(255, 193, 7, 0.2);
+          color: #ffd700;
+          border-color: #ffc107;
+          animation: pulse 1.5s infinite;
         }
         .status.error {
-          background: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
+          background: rgba(220, 53, 69, 0.2);
+          color: #ff6b6b;
+          border-color: #dc3545;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
         .info {
-          background: #e7f3ff;
+          background: rgba(102, 126, 234, 0.2);
           padding: 15px;
           border-radius: 8px;
           margin: 20px 0;
-          font-size: 14px;
-          color: #004085;
-          border-left: 4px solid #004085;
+          font-size: 12px;
+          color: #9db4ff;
+          border-left: 4px solid #667eea;
           text-align: left;
+          font-family: 'Courier New', monospace;
         }
         .pairing-code {
-          background: #fff3cd;
-          padding: 15px;
+          background: rgba(255, 105, 180, 0.2);
+          padding: 20px;
           border-radius: 8px;
           margin: 15px 0;
-          font-size: 18px;
+          font-size: 20px;
           font-weight: bold;
-          color: #856404;
-          font-family: monospace;
-          letter-spacing: 2px;
+          color: #ff69b4;
+          font-family: 'Courier New', monospace;
+          letter-spacing: 4px;
+          border: 2px dashed #ff69b4;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>🤖 SIMON-TECH-BOT</h1>
-        <p class="subtitle">WhatsApp Session Generator v2</p>
-        
-        <div class="info">
-          <strong>ℹ️ Choose pairing method:</strong><br>
-          Select either QR Code or Phone Number to generate your session.
+        <div class="header">
+          <h1>♡ SIMON-TECH-BOT 2 ♡</h1>
+          <p class="subtitle">WhatsApp Session Generator v2</p>
         </div>
 
         <div class="tabs">
           <button class="tab-btn active" data-tab="qr">📱 QR Code</button>
-          <button class="tab-btn" data-tab="phone">☎️ Phone Number</button>
+          <button class="tab-btn" data-tab="phone">☎️ Phone Pairing</button>
         </div>
 
         <!-- QR Code Tab -->
         <div id="qr" class="tab-content active">
           <div class="info">
-            <strong>📖 Instructions:</strong><br>
-            1. Click "Generate QR Code"<br>
-            2. Scan with WhatsApp on your phone<br>
-            3. Wait for session to generate<br>
-            4. Copy your SESSION_ID
+            ➤ Click "Generate QR Code"<br>
+            ➤ Scan with WhatsApp on your phone<br>
+            ➤ Wait for session to generate<br>
+            ➤ Copy your SESSION_ID
           </div>
 
           <button class="button" id="qr-btn" onclick="generateQR()">🔄 Generate QR Code</button>
@@ -388,9 +490,9 @@ app.get('/', (req, res) => {
           <div id="qr-status" class="status"></div>
           
           <div class="qr-container" id="qrContainer">
-            <p style="color: #666; margin-bottom: 15px;">Scan this QR code with your WhatsApp:</p>
+            <p style="color: #667eea; margin-bottom: 15px;">Scan this QR code with your WhatsApp:</p>
             <div id="qrCode"></div>
-            <p style="color: #999; font-size: 12px; margin-top: 10px;">QR expires in 60 seconds</p>
+            <p style="color: #999; font-size: 11px; margin-top: 10px;">⏱️ QR expires in 60 seconds</p>
           </div>
 
           <div class="session-display" id="qr-sessionDisplay">
@@ -404,12 +506,11 @@ app.get('/', (req, res) => {
         <!-- Phone Number Tab -->
         <div id="phone" class="tab-content">
           <div class="info">
-            <strong>📖 Instructions:</strong><br>
-            1. Enter your WhatsApp phone number (with country code)<br>
-            2. Click "Request Pairing Code"<br>
-            3. A 8-digit code will appear<br>
-            4. Enter it in WhatsApp linking<br>
-            5. Copy your SESSION_ID
+            ➤ Enter your WhatsApp phone number (with country code)<br>
+            ➤ Click "Request Pairing Code"<br>
+            ➤ A 8-digit code will appear<br>
+            ➤ Enter it in WhatsApp linking<br>
+            ➤ Copy your SESSION_ID
           </div>
 
           <div class="input-group">
@@ -422,7 +523,7 @@ app.get('/', (req, res) => {
           <div id="phone-status" class="status"></div>
           
           <div class="pairing-code" id="pairingCodeDisplay" style="display: none;">
-            Code: <span id="pairingCodeValue"></span>
+            <span id="pairingCodeValue"></span>
           </div>
 
           <div class="session-display" id="phone-sessionDisplay">
@@ -443,7 +544,6 @@ app.get('/', (req, res) => {
           document.querySelector(\`[data-tab="\${tab}"]\`).classList.add('active');
         }
 
-        // Add event listeners for tab buttons
         document.addEventListener('DOMContentLoaded', function() {
           document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -528,7 +628,7 @@ app.get('/', (req, res) => {
             } else {
               status.textContent = '⏳ Still generating code... Please wait';
               status.className = 'status active waiting';
-              // Keep polling
+              
               let attempts = 0;
               const pollCode = setInterval(async () => {
                 attempts++;
@@ -659,4 +759,7 @@ app.get('/check-session', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Session Generator v2 running on http://localhost:${PORT}`);
   console.log(`📱 Open this link in your browser to generate your SESSION_ID`);
+  console.log('\n╭━━━━━━━━━━━━━━━╮');
+  console.log('♡ SIMON-TECH-BOT 2 👀');
+  console.log('╰━━━━━━━━━━━━━━━╯\n');
 });
