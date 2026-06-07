@@ -45,7 +45,7 @@ function formatPhoneDisplay(phone) {
 }
 
 // /start command
-bot.onText(/\/start/, (msg) => {
+bot.onText(/^\/start$/i, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const firstName = msg.from.first_name || 'User';
@@ -67,10 +67,10 @@ bot.onText(/\/start/, (msg) => {
 });
 
 // /help command
-bot.onText(/\/help/, (msg) => {
+bot.onText(/^\/help$/i, (msg) => {
   const chatId = msg.chat.id;
 
-  const helpMessage = `╔════��═══════════════════╗
+  const helpMessage = `╔════════════════════════╗
 ║ 📌 AVAILABLE COMMANDS  ║
 ╚════════════════════════╝
 
@@ -92,7 +92,7 @@ bot.onText(/\/help/, (msg) => {
 });
 
 // /ping command
-bot.onText(/\/ping/, (msg) => {
+bot.onText(/^\/ping$/i, (msg) => {
   const chatId = msg.chat.id;
   const startTime = Date.now();
 
@@ -107,11 +107,13 @@ bot.onText(/\/ping/, (msg) => {
 💖 Bot is Healthy`,
       { parse_mode: 'HTML' }
     );
+  }).catch(err => {
+    console.error('Error in ping command:', err);
   });
 });
 
 // /pair command
-bot.onText(/\/pair\s+(\S+)/, async (msg, match) => {
+bot.onText(/^\/pair\s+(\S+)$/i, async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const phoneNumber = match[1];
@@ -133,9 +135,9 @@ bot.onText(/\/pair\s+(\S+)/, async (msg, match) => {
   // Send generating message
   const generatingMsg = await bot.sendMessage(
     chatId,
-    `⏳ 𝖦𝖾𝗇𝖾𝗋𝖆𝗍𝖎𝗇𝖌 𝖯𝖆𝖎𝖗 𝖈𝖔𝖉𝖊...
+    `⏳ Generating Pair Code...
 
-📱 𝖭𝖚𝖒𝖻𝖊𝖗: ${formattedPhone}
+📱 Number: ${formattedPhone}
 ${country}
 
 🔄 Please wait a moment...`
@@ -180,11 +182,11 @@ ${country}
             await bot.editMessageText(
               `[ ♡ SESSION CONNECTED ❤️‍🩹 ]
 
-╰┈➤ ɴᴜᴍʙᴇʀ: ${formattedPhone}
+╰┈➤ Number: ${formattedPhone}
 
-╰┈➤ ᴄᴏᴜɴᴛʀʏ: ${country}
+╰┈➤ Country: ${country}
 
-╰┈➤ ʙʀᴀɴᴅ: SIMON-TECH
+╰┈➤ Brand: SIMON-TECH
 
 🔐 Your Session ID (Base64):
 <code>${encodedSession}</code>
@@ -228,16 +230,16 @@ ${country}
         const formattedCode = code || 'ERROR';
 
         await bot.editMessageText(
-          `🔐 𝖯𝖠𝖎𝖘 𝖈𝖔𝖉𝖊 𝖈𝖔𝖉𝖚 𝖈𝖔𝖆𝖈𝖙𝖆𝖎
+          `🔐 Pair Code Ready
 
-📱 𝖭𝖚𝖒𝖇𝖊𝖞: ${formattedPhone}
+📱 Number: ${formattedPhone}
 ${country}
 
 ┌─────────────┐
 │ 🔑 <code>${formattedCode}</code> │
 └─────────────┘
 
-📌 𝖧𝖔𝖜 𝖙𝖔 𝖑𝖎𝖓𝖐:
+📌 How to link:
 WhatsApp → Settings → Linked Devices
 → Link a Device → Enter code above
 
@@ -245,11 +247,11 @@ WhatsApp → Settings → Linked Devices
 
 [ ♡ SIMON TECH BOT2 👀 ]
 
-╰┈➤ ɴᴜᴍʙᴇʀ: ${formattedPhone}
+╰┈➤ Number: ${formattedPhone}
 
-╰┈➤ ᴄᴏᴜɴᴛʀʏ: ${country}
+╰┈➤ Country: ${country}
 
-╰┈➤ ᴄᴏᴅᴇ: ${formattedCode}`,
+╰┈➤ Code: ${formattedCode}`,
           { chat_id: chatId, message_id: generatingMsg.message_id, parse_mode: 'HTML' }
         );
 
@@ -294,7 +296,7 @@ Please check:
 });
 
 // /sessions command
-bot.onText(/\/sessions/, (msg) => {
+bot.onText(/^\/sessions$/i, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
 
@@ -320,7 +322,7 @@ ${session.connected ? '✅ Status: Connected' : '⏳ Status: Pending'}`;
 });
 
 // /cancel command
-bot.onText(/\/cancel/, (msg) => {
+bot.onText(/^\/cancel$/i, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
 
@@ -335,24 +337,24 @@ bot.onText(/\/cancel/, (msg) => {
   }
 });
 
-// Handle unknown commands
+// Handle unknown commands (MUST BE LAST)
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text || '';
 
-  // Skip if it's a recognized command
+  // Only handle if it's a command
   if (text.startsWith('/')) {
-    const command = text.split(' ')[0];
-    if (['/start', '/help', '/ping', '/pair', '/sessions', '/cancel'].includes(command)) {
-      return;
+    const command = text.split(' ')[0].toLowerCase();
+    const validCommands = ['/start', '/help', '/ping', '/pair', '/sessions', '/cancel'];
+    
+    // If not a valid command, show error
+    if (!validCommands.some(cmd => command === cmd)) {
+      bot.sendMessage(
+        chatId,
+        `❌ Unknown command: ${command}\n\n📌 Use /help to see available commands`,
+        { parse_mode: 'HTML' }
+      );
     }
-
-    // Unknown command
-    bot.sendMessage(
-      chatId,
-      `❌ Unknown command: ${command}\n\n📌 Use /help to see available commands`,
-      { parse_mode: 'HTML' }
-    );
   }
 });
 
