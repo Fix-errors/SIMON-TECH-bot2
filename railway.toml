@@ -3,5 +3,3 @@ builder = "NIXPACKS"
 
 [deploy]
 startCommand = "npm start"
-healthcheckPath = "/"
-healthcheckTimeout = 30
