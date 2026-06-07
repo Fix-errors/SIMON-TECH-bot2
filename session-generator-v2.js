@@ -49,10 +49,14 @@ async function generateSessionQR() {
         // Generate SESSION_ID string
         const credentialsPath = path.join(sessionsDir, 'SIMON', 'creds.json');
         if (fs.existsSync(credentialsPath)) {
-          const credentials = JSON.stringify(require(credentialsPath));
-          const encodedSession = Buffer.from(credentials).toString('base64');
-          sessionId = encodedSession;
-          console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
+          try {
+            const credentials = fs.readFileSync(credentialsPath, 'utf-8');
+            const encodedSession = Buffer.from(credentials).toString('base64');
+            sessionId = encodedSession;
+            console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
+          } catch (err) {
+            console.error('Error reading credentials:', err);
+          }
         }
       }
 
@@ -94,10 +98,14 @@ async function generateSessionPhone(phoneNumber) {
         // Generate SESSION_ID string
         const credentialsPath = path.join(sessionsDir, 'SIMON_PHONE', 'creds.json');
         if (fs.existsSync(credentialsPath)) {
-          const credentials = JSON.stringify(require(credentialsPath));
-          const encodedSession = Buffer.from(credentials).toString('base64');
-          sessionId = encodedSession;
-          console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
+          try {
+            const credentials = fs.readFileSync(credentialsPath, 'utf-8');
+            const encodedSession = Buffer.from(credentials).toString('base64');
+            sessionId = encodedSession;
+            console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
+          } catch (err) {
+            console.error('Error reading credentials:', err);
+          }
         }
       }
 
@@ -330,8 +338,8 @@ app.get('/', (req, res) => {
         </div>
 
         <div class="tabs">
-          <button class="tab-btn active" onclick="switchTab('qr')">📱 QR Code</button>
-          <button class="tab-btn" onclick="switchTab('phone')">☎️ Phone Number</button>
+          <button class="tab-btn active" data-tab="qr">📱 QR Code</button>
+          <button class="tab-btn" data-tab="phone">☎️ Phone Number</button>
         </div>
 
         <!-- QR Code Tab -->
@@ -401,8 +409,17 @@ app.get('/', (req, res) => {
           document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
           document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
           document.getElementById(tab).classList.add('active');
-          event.target.classList.add('active');
+          document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
         }
+
+        // Add event listeners for tab buttons
+        document.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              switchTab(this.getAttribute('data-tab'));
+            });
+          });
+        });
 
         async function generateQR() {
           const status = document.getElementById('qr-status');
