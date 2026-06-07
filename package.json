@@ -1,0 +1,15 @@
+{
+  "name": "simon-tech-bot2",
+  "version": "1.0.0",
+  "description": "WhatsApp Session Generator",
+  "main": "session-generator-v2.js",
+  "scripts": {
+    "start": "node session-generator-v2.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "@whiskeysockets/baileys": "^6.0.0",
+    "qrcode": "^1.5.0",
+    "chalk": "^4.1.2"
+  }
+}
