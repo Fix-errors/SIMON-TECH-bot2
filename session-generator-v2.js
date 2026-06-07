@@ -14,6 +14,7 @@ let qrCodeData = null;
 let sessionGenerated = false;
 let sessionId = null;
 let pairingCode = null;
+let sockets = {}; // Store socket instances
 
 // Ensure sessions directory exists
 const sessionsDir = path.join(__dirname, 'sessions');
@@ -24,7 +25,8 @@ if (!fs.existsSync(sessionsDir)) {
 // Session Generator with QR Code method
 async function generateSessionQR() {
   try {
-    const { state, saveCreds } = await useMultiFileAuthState(path.join(sessionsDir, 'SIMON'));
+    const sessionPath = path.join(sessionsDir, 'SIMON');
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
     const sock = makeWASocket({
       auth: state,
@@ -47,16 +49,17 @@ async function generateSessionQR() {
         console.log(`📱 Session ID: ${sessionId}`);
 
         // Generate SESSION_ID string
-        const credentialsPath = path.join(sessionsDir, 'SIMON', 'creds.json');
-        if (fs.existsSync(credentialsPath)) {
-          try {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for creds to save
+          const credentialsPath = path.join(sessionPath, 'creds.json');
+          if (fs.existsSync(credentialsPath)) {
             const credentials = fs.readFileSync(credentialsPath, 'utf-8');
             const encodedSession = Buffer.from(credentials).toString('base64');
             sessionId = encodedSession;
             console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
-          } catch (err) {
-            console.error('Error reading credentials:', err);
           }
+        } catch (err) {
+          console.error('Error reading credentials:', err);
         }
       }
 
@@ -65,6 +68,8 @@ async function generateSessionQR() {
           lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
         if (shouldReconnect) {
           setTimeout(generateSessionQR, 3000);
+        } else {
+          sock.end();
         }
       }
     });
@@ -79,12 +84,15 @@ async function generateSessionQR() {
 // Session Generator with Phone Number Pairing
 async function generateSessionPhone(phoneNumber) {
   try {
-    const { state, saveCreds } = await useMultiFileAuthState(path.join(sessionsDir, 'SIMON_PHONE'));
+    const sessionPath = path.join(sessionsDir, 'SIMON_PHONE');
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
     const sock = makeWASocket({
       auth: state,
       printQRInTerminal: false,
     });
+
+    sockets['phone'] = sock; // Store the socket
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect } = update;
@@ -96,16 +104,17 @@ async function generateSessionPhone(phoneNumber) {
         console.log(`📱 Session ID: ${sessionId}`);
 
         // Generate SESSION_ID string
-        const credentialsPath = path.join(sessionsDir, 'SIMON_PHONE', 'creds.json');
-        if (fs.existsSync(credentialsPath)) {
-          try {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for creds to save
+          const credentialsPath = path.join(sessionPath, 'creds.json');
+          if (fs.existsSync(credentialsPath)) {
             const credentials = fs.readFileSync(credentialsPath, 'utf-8');
             const encodedSession = Buffer.from(credentials).toString('base64');
             sessionId = encodedSession;
             console.log(`\n🔐 Your SESSION_ID (Base64):\n${sessionId}\n`);
-          } catch (err) {
-            console.error('Error reading credentials:', err);
           }
+        } catch (err) {
+          console.error('Error reading credentials:', err);
         }
       }
 
@@ -114,15 +123,32 @@ async function generateSessionPhone(phoneNumber) {
           lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
         if (shouldReconnect) {
           setTimeout(() => generateSessionPhone(phoneNumber), 3000);
+        } else {
+          sock.end();
         }
       }
     });
 
+    // Wait for socket to be ready before requesting pairing code
+    await new Promise(resolve => {
+      const checkReady = setInterval(() => {
+        if (sock.authState && sock.authState.creds) {
+          clearInterval(checkReady);
+          resolve();
+        }
+      }, 100);
+      setTimeout(() => clearInterval(checkReady), 10000); // Timeout after 10s
+    });
+
     // Request pairing code
-    if (!sock.authState.creds.registered) {
-      const code = await sock.requestPairingCode(phoneNumber);
-      pairingCode = code;
-      console.log(`\n📱 Pairing Code: ${code}\n`);
+    try {
+      if (!sock.authState.creds.registered) {
+        const code = await sock.requestPairingCode(phoneNumber);
+        pairingCode = code;
+        console.log(`\n📱 Pairing Code: ${code}\n`);
+      }
+    } catch (codeError) {
+      console.error('Error requesting pairing code:', codeError);
     }
 
     sock.ev.on('creds.update', saveCreds);
@@ -232,6 +258,11 @@ app.get('/', (req, res) => {
         .button:hover {
           transform: translateY(-2px);
           box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
         }
         .input-group {
           margin: 20px 0;
@@ -352,7 +383,7 @@ app.get('/', (req, res) => {
             4. Copy your SESSION_ID
           </div>
 
-          <button class="button" onclick="generateQR()">🔄 Generate QR Code</button>
+          <button class="button" id="qr-btn" onclick="generateQR()">🔄 Generate QR Code</button>
           
           <div id="qr-status" class="status"></div>
           
@@ -382,11 +413,11 @@ app.get('/', (req, res) => {
           </div>
 
           <div class="input-group">
-            <label for="phoneNumber">📞 Phone Number (e.g., +1234567890):</label>
-            <input type="tel" id="phoneNumber" placeholder="+1234567890" />
+            <label for="phoneNumber">📞 Phone Number (e.g., +2349166265317):</label>
+            <input type="tel" id="phoneNumber" placeholder="+2349166265317" />
           </div>
 
-          <button class="button" onclick="generatePhone()">📲 Request Pairing Code</button>
+          <button class="button" id="phone-btn" onclick="generatePhone()">📲 Request Pairing Code</button>
           
           <div id="phone-status" class="status"></div>
           
@@ -409,7 +440,7 @@ app.get('/', (req, res) => {
           document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
           document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
           document.getElementById(tab).classList.add('active');
-          document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+          document.querySelector(\`[data-tab="\${tab}"]\`).classList.add('active');
         }
 
         // Add event listeners for tab buttons
@@ -426,7 +457,9 @@ app.get('/', (req, res) => {
           const qrContainer = document.getElementById('qrContainer');
           const sessionDisplay = document.getElementById('qr-sessionDisplay');
           const copyBtn = document.getElementById('qr-copyBtn');
+          const btn = document.getElementById('qr-btn');
 
+          btn.disabled = true;
           status.textContent = '⏳ Generating QR Code...';
           status.className = 'status active waiting';
           qrContainer.classList.remove('active');
@@ -445,10 +478,15 @@ app.get('/', (req, res) => {
               status.className = 'status active waiting';
 
               checkSessionQR();
+            } else {
+              status.textContent = '❌ Failed to generate QR code';
+              status.className = 'status active error';
+              btn.disabled = false;
             }
           } catch (error) {
             status.textContent = '❌ Error: ' + error.message;
             status.className = 'status active error';
+            btn.disabled = false;
           }
         }
 
@@ -463,8 +501,10 @@ app.get('/', (req, res) => {
           const pairingDisplay = document.getElementById('pairingCodeDisplay');
           const sessionDisplay = document.getElementById('phone-sessionDisplay');
           const copyBtn = document.getElementById('phone-copyBtn');
+          const btn = document.getElementById('phone-btn');
 
-          status.textContent = '⏳ Requesting pairing code...';
+          btn.disabled = true;
+          status.textContent = '⏳ Requesting pairing code... (this may take 30 seconds)';
           status.className = 'status active waiting';
           pairingDisplay.style.display = 'none';
           sessionDisplay.classList.remove('active');
@@ -478,17 +518,50 @@ app.get('/', (req, res) => {
             });
             const data = await response.json();
 
-            if (data.pairingCode) {
+            if (data.pairingCode && data.pairingCode !== 'Generating...') {
               document.getElementById('pairingCodeValue').textContent = data.pairingCode;
               pairingDisplay.style.display = 'block';
-              status.textContent = '📲 Pairing code sent. Check your WhatsApp linked devices.';
-              status.className = 'status active waiting';
+              status.textContent = '✅ Pairing code received! Enter it in WhatsApp.';
+              status.className = 'status active success';
 
               checkSessionPhone();
+            } else {
+              status.textContent = '⏳ Still generating code... Please wait';
+              status.className = 'status active waiting';
+              // Keep polling
+              let attempts = 0;
+              const pollCode = setInterval(async () => {
+                attempts++;
+                try {
+                  const checkResponse = await fetch('/check-session');
+                  const checkData = await checkResponse.json();
+                  if (checkData.pairingCode && checkData.pairingCode !== 'Generating...') {
+                    document.getElementById('pairingCodeValue').textContent = checkData.pairingCode;
+                    pairingDisplay.style.display = 'block';
+                    status.textContent = '✅ Pairing code received! Enter it in WhatsApp.';
+                    status.className = 'status active success';
+                    clearInterval(pollCode);
+                    btn.disabled = false;
+                    checkSessionPhone();
+                  }
+                  if (attempts > 30) {
+                    clearInterval(pollCode);
+                    status.textContent = '❌ Timeout waiting for pairing code';
+                    status.className = 'status active error';
+                    btn.disabled = false;
+                  }
+                } catch (err) {
+                  if (attempts > 30) {
+                    clearInterval(pollCode);
+                    btn.disabled = false;
+                  }
+                }
+              }, 1000);
             }
           } catch (error) {
             status.textContent = '❌ Error: ' + error.message;
             status.className = 'status active error';
+            btn.disabled = false;
           }
         }
 
@@ -497,10 +570,11 @@ app.get('/', (req, res) => {
             const response = await fetch('/check-session');
             const data = await response.json();
 
-            if (data.sessionGenerated) {
+            if (data.sessionGenerated && data.sessionId && data.sessionId !== 'SIMON') {
               const status = document.getElementById('qr-status');
               const sessionDisplay = document.getElementById('qr-sessionDisplay');
               const copyBtn = document.getElementById('qr-copyBtn');
+              const btn = document.getElementById('qr-btn');
 
               document.getElementById('qr-sessionId').textContent = data.sessionId;
               sessionDisplay.classList.add('active');
@@ -510,6 +584,7 @@ app.get('/', (req, res) => {
               status.className = 'status active success';
               
               document.getElementById('qrContainer').classList.remove('active');
+              btn.disabled = false;
             } else {
               setTimeout(checkSessionQR, 2000);
             }
@@ -523,10 +598,11 @@ app.get('/', (req, res) => {
             const response = await fetch('/check-session');
             const data = await response.json();
 
-            if (data.sessionGenerated) {
+            if (data.sessionGenerated && data.sessionId && data.sessionId !== 'SIMON_PHONE') {
               const status = document.getElementById('phone-status');
               const sessionDisplay = document.getElementById('phone-sessionDisplay');
               const copyBtn = document.getElementById('phone-copyBtn');
+              const btn = document.getElementById('phone-btn');
 
               document.getElementById('phone-sessionId').textContent = data.sessionId;
               sessionDisplay.classList.add('active');
@@ -536,6 +612,7 @@ app.get('/', (req, res) => {
               status.className = 'status active success';
               
               document.getElementById('pairingCodeDisplay').style.display = 'none';
+              btn.disabled = false;
             } else {
               setTimeout(checkSessionPhone, 2000);
             }
@@ -569,14 +646,14 @@ app.post('/generate-phone', (req, res) => {
   const { phoneNumber } = req.body;
   if (phoneNumber) {
     generateSessionPhone(phoneNumber);
-    res.json({ pairingCode: pairingCode || 'Generating...' });
+    res.json({ pairingCode: pairingCode || 'Generating...', status: 'processing' });
   } else {
     res.status(400).json({ error: 'Phone number required' });
   }
 });
 
 app.get('/check-session', (req, res) => {
-  res.json({ sessionGenerated, sessionId });
+  res.json({ sessionGenerated, sessionId, pairingCode });
 });
 
 app.listen(PORT, () => {
