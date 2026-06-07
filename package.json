@@ -1,12 +1,13 @@
 {
   "name": "simon-tech-bot2",
   "version": "1.0.0",
-  "description": "WhatsApp Session Generator",
-  "main": "session-generator-v2.js",
+  "description": "WhatsApp Session Generator with Telegram Bot",
+  "main": "telegram-bot.js",
   "scripts": {
-    "start": "node session-generator-v2.js"
+    "start": "node telegram-bot.js"
   },
   "dependencies": {
+    "node-telegram-bot-api": "^0.63.0",
     "express": "^4.18.0",
     "@whiskeysockets/baileys": "^6.0.0",
     "qrcode": "^1.5.0",
