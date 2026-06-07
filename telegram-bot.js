@@ -3,7 +3,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const fs = require('fs');
 const path = require('path');
 
-// Replace with your actual Telegram bot token
+// Telegram Bot Setup
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN_HERE';
 const bot = new TelegramBot(TOKEN, { polling: true });
 
@@ -18,25 +18,25 @@ const userStates = {};
 
 // Country code mapping
 const countryMap = {
-  '234': '🇳🇬 Nigeria',
-  '1': '🇺🇸 United States',
-  '44': '🇬🇧 United Kingdom',
-  '91': '🇮🇳 India',
-  '86': '🇨🇳 China',
-  '81': '🇯🇵 Japan',
-  '55': '🇧🇷 Brazil',
-  '33': '🇫🇷 France',
-  '39': '🇮🇹 Italy',
-  '49': '🇩🇪 Germany',
+  '234': { flag: '🇳🇬', name: 'Nigeria' },
+  '1': { flag: '🇺🇸', name: 'United States' },
+  '44': { flag: '🇬🇧', name: 'United Kingdom' },
+  '91': { flag: '🇮🇳', name: 'India' },
+  '86': { flag: '🇨🇳', name: 'China' },
+  '81': { flag: '🇯🇵', name: 'Japan' },
+  '55': { flag: '🇧🇷', name: 'Brazil' },
+  '33': { flag: '🇫🇷', name: 'France' },
+  '39': { flag: '🇮🇹', name: 'Italy' },
+  '49': { flag: '🇩🇪', name: 'Germany' },
 };
 
 function getCountry(phone) {
-  for (const [code, country] of Object.entries(countryMap)) {
+  for (const [code, data] of Object.entries(countryMap)) {
     if (phone.startsWith('+' + code) || phone.startsWith(code)) {
-      return country;
+      return `${data.flag} ${data.name}`;
     }
   }
-  return '🌍 Unknown';
+  return '🌍 Country unknown';
 }
 
 function formatPhoneDisplay(phone) {
@@ -52,16 +52,16 @@ bot.onText(/\/start/, (msg) => {
   const lastName = msg.from.last_name || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
-  const welcomeMessage = `╭━━━━━━━━━━━━━━━╮
-💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖
-╰━━━━━━━━━━━━━━━╯
+  const welcomeMessage = `╔════════════════════════╗
+║ 💖 SIMON TECH BOT 2 💖 ║
+╚════════════════════════╝
 
-👋 𝐖𝐞𝐥𝐜𝐨𝐦𝐞, ${fullName}!
+👋 Welcome, ${fullName}!
 
-📱 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 𝐈𝐃: ${userId}
-👤 𝐍𝐚𝐦𝐞: ${fullName}
+📱 Your Telegram ID: <code>${userId}</code>
+👤 Name: ${fullName}
 
-🎯 𝐔𝐬𝐞 /help 𝐭𝐨 𝐬𝐞𝐞 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬`;
+🎯 Use /help to see available commands`;
 
   bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'HTML' });
 });
@@ -70,24 +70,23 @@ bot.onText(/\/start/, (msg) => {
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
 
-  const helpMessage = `╭━━━━━━━━━━━━━━━╮
-💖 𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒 💖
-╰━━━━━━━━━━━━━━━╯
+  const helpMessage = `╔════��═══════════════════╗
+║ 📌 AVAILABLE COMMANDS  ║
+╚════════════════════════╝
 
-📌 /start - Welcome message & user info
-📌 /pair <phone_number> - Generate WhatsApp pairing code
-   ➤ Example: /pair 2349166265317
-📌 /help - Show this help message
-📌 /ping - Check bot status
-📌 /sessions - View your active sessions
-📌 /cancel - Cancel current operation
+/start - Welcome message & your info
+/pair <phone> - Generate WhatsApp pairing code
+/help - Show this help message
+/ping - Check bot status
+/sessions - View your active sessions
+/cancel - Cancel current operation
 
-📱 𝐏𝐡𝐨𝐧𝐞 𝐅𝐨𝐫𝐦𝐚𝐭:
-   ➤ Include country code (no + needed)
-   ➤ Example: 2349166265317 (Nigeria)
-   ➤ Example: 12025551234 (USA)
+📱 Phone Format:
+   • Include country code
+   • Example: 2349166265317 (Nigeria)
+   • Example: 12025551234 (USA)
 
-❤️‍🩹 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐`;
+❤️‍🩹 SIMON TECH BOT 2`;
 
   bot.sendMessage(chatId, helpMessage, { parse_mode: 'HTML' });
 });
@@ -97,15 +96,15 @@ bot.onText(/\/ping/, (msg) => {
   const chatId = msg.chat.id;
   const startTime = Date.now();
 
-  bot.sendMessage(chatId, '🔍 𝐂𝐡𝐞𝐜𝐤𝐢𝐧𝐠 𝐛𝐨𝐭 𝐬𝐭𝐚𝐭𝐮𝐬...').then(() => {
+  bot.sendMessage(chatId, '🔍 Checking bot status...').then(() => {
     const responseTime = Date.now() - startTime;
     bot.sendMessage(
       chatId,
-      `✅ 𝐁𝐨𝐭 𝐢𝐬 𝐀𝐂𝐓𝐈𝐕𝐄 ✅
+      `✅ Bot is ACTIVE ✅
 
-🔌 𝐒𝐭𝐚𝐭𝐮𝐬: 𝐎𝐧𝐥𝐢𝐧𝐞
-⚡ 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐞 𝐓𝐢𝐦𝐞: ${responseTime}ms
-💖 𝐁𝐨𝐭 𝐇𝐞𝐚𝐥𝐭𝐡𝐲`,
+🔌 Status: Online
+⚡ Response Time: ${responseTime}ms
+💖 Bot is Healthy`,
       { parse_mode: 'HTML' }
     );
   });
@@ -119,7 +118,7 @@ bot.onText(/\/pair\s+(\S+)/, async (msg, match) => {
 
   // Validate phone number format
   if (!/^\d{10,15}$/.test(phoneNumber.replace(/\D/g, ''))) {
-    bot.sendMessage(chatId, '❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐩𝐡𝐨𝐧𝐞 𝐧𝐮𝐦𝐛𝐞𝐫 𝐟𝐨𝐫𝐦𝐚𝐭\n\n📌 𝐏𝐥𝐞𝐚𝐬𝐞 𝐮𝐬𝐞: /pair <country_code><number>\n𝐄𝐱𝐚𝐦𝐩𝐥𝐞: /pair 2349166265317', { parse_mode: 'HTML' });
+    bot.sendMessage(chatId, '❌ Invalid phone number format\n\n📌 Please use: /pair <country_code><number>');
     return;
   }
 
@@ -134,17 +133,12 @@ bot.onText(/\/pair\s+(\S+)/, async (msg, match) => {
   // Send generating message
   const generatingMsg = await bot.sendMessage(
     chatId,
-    `╭━━━━━━━━━━━━━━━╮
-💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖
-╰━━━━━━━━━━━━━━━╯
+    `⏳ 𝖦𝖾𝗇𝖾𝗋𝖆𝗍𝖎𝗇𝖌 𝖯𝖆𝖎𝖗 𝖈𝖔𝖉𝖊...
 
-⏳ 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐢𝐧𝐠 𝐏𝐚𝐢𝐫 𝐂���𝐝𝐞...
-
-📱 𝐍𝐮𝐦𝐛𝐞𝐫: ${formattedPhone}
+📱 𝖭𝖚𝖒𝖻𝖊𝖗: ${formattedPhone}
 ${country}
 
-🔄 𝐏𝐥𝐞𝐚𝐬𝐞 𝐰𝐚𝐢𝐭 𝐚 𝐦𝐨𝐦𝐞𝐧𝐭...`,
-    { parse_mode: 'HTML' }
+🔄 Please wait a moment...`
   );
 
   try {
@@ -184,24 +178,18 @@ ${country}
             const encodedSession = Buffer.from(credentials).toString('base64');
 
             await bot.editMessageText(
-              `╭━━━━━━━━━━━━━━━╮
-♡ 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 👀
-╰━━━━━━━━━━━━━━━╯
+              `[ ♡ SESSION CONNECTED ❤️‍🩹 ]
 
-╰┈➤ ɴᴜᴍʙᴇʀ : ${formattedPhone}
+╰┈➤ ɴᴜᴍʙᴇʀ: ${formattedPhone}
 
-╰┈➤ ᴄᴏᴜɴᴛʀʏ : ${country}
+╰┈➤ ᴄᴏᴜɴᴛʀʏ: ${country}
 
-╰┈➤ ʙʀᴀɴᴅ : SIMO-TECH
+╰┈➤ ʙʀᴀɴᴅ: SIMON-TECH
 
-╰┈➤ ᴘᴀɪʀ ᴄᴏᴅᴇ : ✅ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬
-
-[ ✅ 𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐎𝐍𝐍𝐄𝐂𝐓𝐄𝐃 ✅ ]
-
-🔐 𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐈𝐃:
+🔐 Your Session ID (Base64):
 <code>${encodedSession}</code>
 
-📋 𝐔𝐬𝐞 /sessions 𝐭𝐨 𝐯𝐢𝐞𝐰 𝐲𝐨𝐮𝐫 𝐚𝐜𝐭𝐢𝐯𝐞 𝐬𝐞𝐬𝐬𝐢𝐨𝐧𝐬`,
+📋 Use /sessions to view your sessions`,
               { chat_id: chatId, message_id: generatingMsg.message_id, parse_mode: 'HTML' }
             );
           }
@@ -236,23 +224,32 @@ ${country}
         const code = await sock.requestPairingCode(formattedPhone);
         pairingCodeGenerated = true;
 
-        // Format code with dashes (XXXX-XXXX format)
-        const formattedCode = code ? code.replace(/(.{4})/g, '$1-').slice(0, -1) : 'ERROR';
+        // Format code (8 digits)
+        const formattedCode = code || 'ERROR';
 
         await bot.editMessageText(
-          `╭━━━━━━━━━━━━━━━╮
-💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖
-╰━━━━━━━━━━━━━━━╯
+          `🔐 𝖯𝖠𝖎𝖘 𝖈𝖔𝖉𝖊 𝖈𝖔𝖉𝖚 𝖈𝖔𝖆𝖈𝖙𝖆𝖎
 
-✅ 𝐏𝐚𝐢𝐫 𝐂𝐨𝐝𝐞 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞𝐝
-
-📱 𝐍𝐮𝐦𝐛𝐞𝐫: ${formattedPhone}
+📱 𝖭𝖚𝖒𝖇𝖊𝖞: ${formattedPhone}
 ${country}
 
-🔑 𝐂𝐨𝐝𝐞: <code>${formattedCode}</code>
+┌─────────────┐
+│ 🔑 <code>${formattedCode}</code> │
+└─────────────┘
 
-📲 𝐄𝐧𝐭𝐞𝐫 𝐭𝐡𝐢𝐬 𝐜𝐨𝐝𝐞 𝐢𝐧 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩
-❤️‍🩹 𝐒𝐞𝐬𝐬𝐢𝐨𝐧 𝐂𝐨𝐧𝐧𝐞𝐜𝐭𝐢𝐧𝐠...`,
+📌 𝖧𝖔𝖜 𝖙𝖔 𝖑𝖎𝖓𝖐:
+WhatsApp → Settings → Linked Devices
+→ Link a Device → Enter code above
+
+⏰ Code expires in ~60 seconds
+
+[ ♡ SIMON TECH BOT2 👀 ]
+
+╰┈➤ ɴᴜᴍʙᴇʀ: ${formattedPhone}
+
+╰┈➤ ᴄᴏᴜɴᴛʀʏ: ${country}
+
+╰┈➤ ᴄᴏᴅᴇ: ${formattedCode}`,
           { chat_id: chatId, message_id: generatingMsg.message_id, parse_mode: 'HTML' }
         );
 
@@ -276,12 +273,12 @@ ${country}
     } catch (codeError) {
       console.error('Error requesting pairing code:', codeError);
       await bot.editMessageText(
-        `❌ 𝐄𝐫𝐫𝐨𝐫 𝐠𝐞𝐧𝐞𝐫𝐚𝐭𝐢𝐧𝐠 𝐩𝐚𝐢𝐫𝐢𝐧𝐠 𝐜𝐨𝐝𝐞
+        `❌ Error generating pairing code
 
-𝐏𝐥𝐞𝐚𝐬𝐞 𝐜𝐡𝐞𝐜𝐤:
-• 𝐏𝐡𝐨𝐧𝐞 𝐧𝐮𝐦𝐛𝐞𝐫 𝐟𝐨𝐫𝐦𝐚𝐭
-• 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩 𝐢𝐬 𝐢𝐧𝐬𝐭𝐚𝐥𝐥𝐞𝐝
-• 𝐘𝐨𝐮𝐫 𝐢𝐧𝐭𝐞𝐫𝐧𝐞𝐭 𝐜𝐨𝐧𝐧𝐞𝐜𝐭𝐢𝐨𝐧`,
+Please check:
+• Phone number format
+• WhatsApp is installed
+• Your internet connection`,
         { chat_id: chatId, message_id: generatingMsg.message_id, parse_mode: 'HTML' }
       );
     }
@@ -290,7 +287,7 @@ ${country}
   } catch (error) {
     console.error('Error generating session:', error);
     await bot.editMessageText(
-      `❌ 𝐄𝐫𝐫𝐨𝐫: ${error.message}`,
+      `❌ Error: ${error.message}`,
       { chat_id: chatId, message_id: generatingMsg.message_id, parse_mode: 'HTML' }
     );
   }
@@ -303,20 +300,20 @@ bot.onText(/\/sessions/, (msg) => {
 
   if (userSessions[userId]) {
     const session = userSessions[userId];
-    const sessionsMessage = `╭━━━━━━━━━━━━━━━╮
-💖 𝐀𝐂𝐓𝐈𝐕𝐄 𝐒𝐄𝐒𝐒𝐈𝐎𝐍𝐒 💖
-╰━━━━━━━━━━━━━━━╯
+    const sessionsMessage = `╔════════════════════════╗
+║ 💖 ACTIVE SESSIONS 💖  ║
+╚════════════════════════╝
 
-📱 𝐏𝐡𝐨𝐧𝐞: ${session.phoneNumber}
-🔐 𝐒𝐞𝐬𝐬𝐢𝐨𝐧 𝐈𝐃: ${session.sessionId}
-${session.pairingCode ? `🔑 𝐂𝐨𝐝𝐞: ${session.pairingCode}` : ''}
-${session.connected ? '✅ 𝐒𝐭𝐚𝐭𝐮𝐬: 𝐂𝐨𝐧𝐧𝐞𝐜𝐭𝐞𝐝' : '⏳ 𝐒𝐭𝐚𝐭𝐮𝐬: 𝐏𝐞𝐧𝐝𝐢𝐧𝐠'}`;
+📱 Phone: ${session.phoneNumber}
+🔐 Session ID: ${session.sessionId}
+${session.pairingCode ? `🔑 Code: ${session.pairingCode}` : ''}
+${session.connected ? '✅ Status: Connected' : '⏳ Status: Pending'}`;
 
     bot.sendMessage(chatId, sessionsMessage, { parse_mode: 'HTML' });
   } else {
     bot.sendMessage(
       chatId,
-      '❌ 𝐍𝐨 𝐚𝐜𝐭𝐢𝐯𝐞 𝐬𝐞𝐬𝐬𝐢𝐨𝐧𝐬\n\n📌 𝐔𝐬𝐞 /pair <phone_number> 𝐭𝐨 𝐠𝐞𝐧𝐞𝐫𝐚𝐭𝐞 𝐚 𝐧𝐞𝐰 𝐬𝐞𝐬𝐬𝐢𝐨𝐧',
+      '❌ No active sessions\n\n📌 Use /pair <phone_number> to generate a new session',
       { parse_mode: 'HTML' }
     );
   }
@@ -332,9 +329,9 @@ bot.onText(/\/cancel/, (msg) => {
       userStates[userId].socket.end();
     }
     delete userStates[userId];
-    bot.sendMessage(chatId, '✅ 𝐎𝐩𝐞𝐫𝐚𝐭𝐢𝐨𝐧 𝐜𝐚𝐧𝐜𝐞𝐥𝐞𝐝', { parse_mode: 'HTML' });
+    bot.sendMessage(chatId, '✅ Operation cancelled', { parse_mode: 'HTML' });
   } else {
-    bot.sendMessage(chatId, '❌ 𝐍𝐨 𝐚𝐜𝐭𝐢𝐯𝐞 𝐨𝐩𝐞𝐫𝐚𝐭𝐢𝐨𝐧 𝐭𝐨 𝐜𝐚𝐧𝐜𝐞𝐥', { parse_mode: 'HTML' });
+    bot.sendMessage(chatId, '❌ No active operation to cancel', { parse_mode: 'HTML' });
   }
 });
 
@@ -353,17 +350,17 @@ bot.on('message', (msg) => {
     // Unknown command
     bot.sendMessage(
       chatId,
-      `❌ 𝐔𝐧𝐤𝐧𝐨𝐰𝐧 𝐜𝐨𝐦𝐦𝐚𝐧𝐝: ${command}\n\n📌 𝐔𝐬𝐞 /help 𝐭𝐨 𝐬𝐞𝐞 𝐚𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬`,
+      `❌ Unknown command: ${command}\n\n📌 Use /help to see available commands`,
       { parse_mode: 'HTML' }
     );
   }
 });
 
-console.log('╭━━━━━━━━━━━━━━━╮');
-console.log('💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐓𝐄𝐋𝐄𝐆𝐑𝐀𝐌 𝐁𝐎𝐓 𝟐 💖');
-console.log('╰━━━━━━━━━━━━━━━╯');
+console.log('╔════════════════════════╗');
+console.log('║ 💖 SIMON TECH BOT 2 💖 ║');
+console.log('╚════════════════════════╝');
 console.log('🚀 Bot is running...');
-console.log('📌 Bot Token:', TOKEN ? '✅ Configured' : '❌ Missing');
+console.log('📌 Bot Token:', TOKEN && TOKEN !== 'YOUR_TELEGRAM_BOT_TOKEN_HERE' ? '✅ Configured' : '❌ Missing');
 console.log('⏱️ Polling enabled for commands\n');
 
 // Handle bot errors
