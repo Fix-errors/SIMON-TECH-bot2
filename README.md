@@ -1,301 +1,199 @@
-# 🤖 SIMON-TECH-BOT v2.0
+# SIMON-TECH BOT 2 - Telegram Edition
 
-A powerful WhatsApp bot built with [Baileys](https://github.com/WhiskeySockets/Baileys). Works on Windows, macOS, and Linux.
+**WhatsApp Pairing Code Generator via Telegram Bot**
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fsimontech-maxb%2FSIMON-TECH-Bot2&envs=SESSION_ID%2CBOT_NAME%2CBOT_PREFIX%2COWNER_NUMBER&optionalEnvs=SESSION_ID&SESSION_IDDescription=Your%20WhatsApp%20Session%20ID&BOT_NAMEDefault=SIMON&BOT_PREFIXDefault=.&OWNER_NUMBERDefault=2349166265317)
+## 🚀 Setup
 
----
-
-## ✨ Features
-
-- ✅ **QR Code & Phone Number Pairing** - Two methods to connect WhatsApp
-- ✅ **Fast Responses** - Lightning-quick bot replies
-- ✅ **Auto Replies** - Smart message automation
-- ✅ **Command System** - Easy-to-use prefix commands
-- ✅ **Uptime Tracking** - Monitor bot performance
-- ✅ **Group Support** - Works in groups and DMs
-- ✅ **Easy Deployment** - Deploy to Railway with one click
-- ✅ **Customizable** - Modify commands and settings easily
-
----
-
-## 🚀 Quick Start
-
-### 1️⃣ Generate Session
-
+### 1. Install Dependencies
 ```bash
 npm install
-npm run session
 ```
 
-Then open `http://localhost:3000` and choose:
-- **📱 QR Code**: Scan with WhatsApp
-- **☎️ Phone Number**: Use pairing code method
+### 2. Configure Bot Token
+Set your Telegram bot token as an environment variable:
 
-### 2️⃣ Deploy to Railway
-
-Click the button above or:
-- Set `SESSION_ID` environment variable
-- Deploy automatically
-
-### 3️⃣ Use Your Bot
-
-Send commands in WhatsApp:
-```
-.menu    - Show all commands
-.ping    - Check speed
-.alive   - Bot status
-.help    - Get help
-```
-
----
-
-## 📥 Installation
-
-### Prerequisites
-- Node.js 14+ or Railway account
-- WhatsApp account
-
-### Local Setup
-
+**Windows:**
 ```bash
-# Clone repository
-git clone https://github.com/simontech-maxb/SIMON-TECH-Bot2.git
-cd SIMON-TECH-Bot2
-
-# Install dependencies
-npm install
-
-# Generate session
-npm run session
-
-# Create .env file
-cp .env.example .env
-
-# Edit .env with your SESSION_ID
-
-# Start bot
-npm start
+set TELEGRAM_BOT_TOKEN=your_token_here
+node telegram-bot.js
 ```
 
-### Development Mode
-
+**Linux/Mac:**
 ```bash
-npm run dev    # Auto-reload on file changes
+export TELEGRAM_BOT_TOKEN=your_token_here
+node telegram-bot.js
 ```
 
----
-
-## 🎯 Available Commands
-
-| Command | Description |
-|---------|-------------|
-| `.menu` | Show all available commands |
-| `.ping` | Check bot response time |
-| `.alive` | Show bot status & uptime |
-| `.help` | Display help information |
-| `.uptime` | Show how long bot is running |
-| `.owner` | Get owner information |
-
----
-
-## 🛠️ Configuration
-
-Edit `.env` file:
-
-```env
-# Session
-SESSION_ID=your_generated_session_id
-
-# Bot Settings
-BOT_NAME=SIMON
-BOT_PREFIX=.
-BOT_VERSION=2.0.0
-
-# Owner Info
-OWNER_NUMBER=2349166265317
-OWNER_NAME=SIMON TECH
-
-# Features
-ENABLE_AUTO_REPLY=true
-
-# Server
-PORT=3000
-NODE_ENV=production
+**Or create a `.env` file:**
+```
+TELEGRAM_BOT_TOKEN=your_token_here
 ```
 
----
+### 3. Get Your Bot Token
+1. Open Telegram
+2. Search for `@BotFather`
+3. Send `/newbot` and follow instructions
+4. Copy your bot token
 
-## 🚂 Deploy to Railway
+## 📱 Bot Commands
 
-### Option 1: One-Click Deploy (Easiest)
+### `/start`
+- Welcome message with your Telegram ID and name
+- Example output:
+```
+💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖
 
-Click the Railway button at the top ☝️
-
-### Option 2: Manual Deployment
-
-1. Go to [railway.app](https://railway.app)
-2. Create new project
-3. Connect GitHub repository
-4. Add environment variables
-5. Deploy automatically
-
-### Option 3: Using Railway CLI
-
-```bash
-npm install -g railway
-railway login
-railway link
-railway up
+👋 Welcome, User!
+📱 Telegram ID: 123456789
+👤 Name: John Doe
 ```
 
----
+### `/pair <phone_number>`
+- Generate WhatsApp pairing code for your phone number
+- Format: Country code + phone number (no + symbol needed)
+- Examples:
+  - `/pair 2349166265317` (Nigeria)
+  - `/pair 12025551234` (USA)
+  - `/pair 447911123456` (UK)
 
-## 📱 Session Generator Methods
+**Response:**
+```
+╭━━━━━━━━━━━━━━━╮
+💖 𝐒𝐈𝐌𝐎𝐍 𝐓𝐄𝐂𝐇 𝐁𝐎𝐓 𝟐 💖
+╰━━━━━━━━━━━━━━━╯
 
-### Method 1: QR Code (Recommended)
+✅ 𝐏𝐚𝐢𝐫 𝐂𝐨𝐝𝐞 𝐆𝐞𝐧𝐞𝐫𝐚𝐭𝐞𝐝
 
-1. Run `npm run session`
-2. Open browser to `http://localhost:3000`
-3. Click **"Generate QR Code"**
-4. Scan with WhatsApp camera/app
-5. Copy SESSION_ID
+📱 𝐍𝐮𝐦𝐛𝐞𝐫: +2349166265317
+🇳🇬 𝐍𝐢𝐠𝐞𝐫𝐢𝐚 (+234)
 
-### Method 2: Phone Number Pairing
+🔑 𝐂𝐨𝐝𝐞: XXXX-XXXX
 
-1. Run `npm run session`
-2. Go to **"Phone Number"** tab
-3. Enter your number with country code
-4. Enter 8-digit pairing code from WhatsApp
-5. Copy SESSION_ID
+📲 𝐄𝐧𝐭𝐞𝐫 𝐭𝐡𝐢𝐬 𝐜𝐨𝐝𝐞 𝐢𝐧 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩
+❤️‍🩹 𝐒𝐞𝐬𝐬𝐢𝐨𝐧 𝐂𝐨𝐧𝐧𝐞𝐜𝐭𝐢𝐧𝐠...
+```
 
----
+### `/help`
+- Display all available commands and their usage
+- Shows phone number format examples
 
-## 📊 Project Structure
+### `/ping`
+- Check if the bot is online and responsive
+- Returns response time in milliseconds
+
+**Response:**
+```
+✅ 𝐁𝐨𝐭 𝐢𝐬 𝐀𝐂𝐓𝐈𝐕𝐄 ✅
+
+🔌 𝐒𝐭𝐚𝐭𝐮𝐬: 𝐎𝐧𝐥𝐢𝐧𝐞
+⚡ 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐞 𝐓𝐢𝐦𝐞: 45ms
+💖 𝐁𝐨𝐭 𝐇𝐞𝐚𝐥𝐭𝐡𝐲
+```
+
+### `/sessions`
+- View your active WhatsApp sessions
+- Shows phone number, session ID, pairing code, and connection status
+
+### `/cancel`
+- Cancel the current operation
+- Useful if pairing is taking too long
+
+## 📂 Directory Structure
 
 ```
-SIMON-TECH-Bot2/
-├── index.js                 # Main bot file
-├── session-generator-v2.js  # Session generator (QR + Phone)
-├── menu.js                  # Menu commands
-├── config.js                # Configuration
+SIMON-TECH-bot2/
+├── telegram-bot.js          # Main Telegram bot file
+├── session-generator-v2.js  # Original web UI version
 ├── package.json             # Dependencies
-├── .env.example             # Environment template
-├── railway.json             # Railway config
-├── DEPLOYMENT.md            # Deployment guide
-└── README.md               # This file
+├── README.md                # This file
+└── sessions/                # WhatsApp session storage (auto-created)
+    ├── SIMON/               # QR-based sessions
+    ├── SIMON_PHONE/         # Phone-based sessions
+    └── SIMON_<uid>_<ts>/    # User-specific sessions
 ```
 
----
+## 🔐 Features
 
-## 🔐 Security Tips
+✅ **Secure Session Generation**
+- Encrypts credentials in Base64 format
+- Sessions stored locally in `sessions/` folder
 
-- ✅ Keep `SESSION_ID` secret
-- ✅ Never share `.env` file
-- ✅ Use strong owner number
-- ✅ Enable security features in `.env`
-- ✅ Regenerate session if compromised
+✅ **Multi-User Support**
+- Each user gets their own session
+- Multiple sessions per user supported
 
----
+✅ **Country Detection**
+- Automatically detects country from phone code
+- Supports 10+ countries
 
-## 📈 Monitoring
+✅ **Real-time Status Updates**
+- Live progress messages
+- Error handling with detailed messages
 
-### Check Bot Status
+## ⚙️ Environment Variables
 
-```bash
-.alive   # Shows uptime & stats
-.ping    # Measures response time
-.uptime  # Uptime duration
-```
-
-### Railway Dashboard
-
-- View real-time logs
-- Monitor CPU/Memory
-- Check deployment status
-- Restart bot if needed
-
----
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `TELEGRAM_BOT_TOKEN` | Your Telegram bot token from @BotFather | Yes |
 
 ## 🐛 Troubleshooting
 
-### Bot Not Connecting
+### Bot not responding
+1. Check if bot token is correct
+2. Verify internet connection
+3. Check server logs for errors
 
-- Verify SESSION_ID is correct
-- Check internet connection
-- Regenerate session if expired
-- Check logs: `Railway Dashboard → Logs`
+### Phone pairing fails
+1. Ensure phone number format is correct (no + symbol)
+2. Include full country code
+3. Check WhatsApp is installed on your phone
+4. Ensure strong internet connection
 
-### Session Expired
+### Session not generating
+1. Wait 30-60 seconds for WhatsApp to process
+2. Try canceling and requesting again
+3. Check if phone is logged out of WhatsApp
 
-```bash
-npm run session
-# Generate new SESSION_ID and update .env or Railway variables
+## 📝 Example Flow
+
+```
+User: /start
+Bot: 👋 Welcome, User! 
+     📱 Telegram ID: 123456789
+
+User: /pair 2349166265317
+Bot: ⏳ Generating Pair Code...
+Bot: ✅ Code Generated: XXXX-XXXX
+     📲 Enter in WhatsApp...
+     ❤️‍🩹 Session Connecting...
+
+User: [Enters code in WhatsApp]
+
+Bot: ✅ Session generated successfully!
+     🔐 SESSION_ID: [long-base64-code]
 ```
 
-### Permission Denied
+## 🚀 Running the Bot
 
 ```bash
-# Linux/Mac
-chmod +x *.js
+# Install dependencies first
+npm install
+
+# Run with environment variable
+export TELEGRAM_BOT_TOKEN=your_token_here
 npm start
 
-# Or use Node directly
-node index.js
+# Or with npm script
+npm run dev
 ```
 
----
+## 📞 Support
 
-## 📝 Common Issues
+For issues or questions:
+1. Check the README.md file
+2. Review console logs for error messages
+3. Verify all requirements are met
 
-| Issue | Solution |
-|-------|----------|
-| QR Code not displaying | Refresh browser, check port 3000 |
-| Session generation fails | Ensure WhatsApp is updated |
-| Bot offline on Railway | Check environment variables |
-| Commands not working | Verify prefix (default: `.`) |
+## ❤️‍🩹 SIMON-TECH BOT 2
 
----
-
-## 🎓 Learning Resources
-
-- [Baileys Documentation](https://github.com/WhiskeySockets/Baileys)
-- [Railway Documentation](https://docs.railway.app)
-- [Node.js Guide](https://nodejs.org/docs)
-
----
-
-## 📞 Support & Contributions
-
-- **Report Bug**: [GitHub Issues](https://github.com/simontech-maxb/SIMON-TECH-Bot2/issues)
-- **Suggest Feature**: Open an issue with `[FEATURE]` prefix
-- **Contribute**: Fork and send pull requests
-
----
-
-## 📜 License
-
-MIT License - feel free to use and modify
-
----
-
-## ⭐ If You Like This Project
-
-- Give it a **star** ⭐
-- **Share** with others
-- **Follow** for updates
-- **Contribute** improvements
-
----
-
-## 🙏 Credits
-
-- Built with [Baileys](https://github.com/WhiskeySockets/Baileys)
-- Hosted on [Railway](https://railway.app)
-- Deployed with ❤️ by SIMON TECH
-
----
-
-**Made with 💻 and ☕ by SIMON TECH**
-
-🚀 Happy Botting! 🤖
+Made with ❤️ for secure WhatsApp session generation via Telegram
